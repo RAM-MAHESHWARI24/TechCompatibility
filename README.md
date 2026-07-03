@@ -58,36 +58,26 @@ docker --version
 docker compose version
 ```
 
-If you ever need to onboard a new laptop or provision a cloud server for this project, you can simply run this script, run `git clone` to pull down your repository, and then run `docker compose up -d` to bring the infrastructure online.
+If you ever need to onboard a new laptop or provision a cloud server for this project, you can simply run this script, clone the repository, and then run `sudo docker compose up -d` to bring the infrastructure online.
 
 ## Quick start
 
-### 1. Clone the repository
+If you are starting from a fresh machine, clone the repository first:
 
 ```bash
 git clone https://github.com/RAM-MAHESHWARI24/TechCompatibility.git
 cd TechCompatibility
 ```
 
-### 2. Install dependencies
+If dependencies were already installed, you do not need to reinstall them. Use three separate terminals for the three services below.
 
-```bash
-cd TechCompatibility
-cd proxy
-docker compose up -d
-cd ../backend
-./mvnw clean package
-cd ../frontend
-npm install
-```
+### 1. Start Docker services
 
-### 3. Start Docker services
-
-The `proxy/docker-compose.yml` file launches the database and the reverse proxy.
+Open Terminal 1 and run:
 
 ```bash
 cd proxy
-docker compose up -d
+sudo docker compose up -d
 ```
 
 This starts:
@@ -95,36 +85,37 @@ This starts:
 - `database` — MySQL 8.0
 - `reverse-proxy` — Nginx
 
-### 3. Start the backend
+### 2. Start the backend
 
-Open a new terminal and run:
+Open Terminal 2 and run:
 
 ```bash
-cd /home/hemonesh-maheshwari/Desktop/New_tech_demo/backend
+cd backend
 ./mvnw clean package
 ./mvnw spring-boot:run
 ```
 
 The backend listens on `http://localhost:8080`.
 
-### 4. Start the frontend
+### 3. Start the frontend
 
-Open another terminal and run:
+Open Terminal 3 and run:
 
 ```bash
-cd /home/hemonesh-maheshwari/Desktop/New_tech_demo/frontend
-npm install
+cd frontend
 npm run dev
 ```
 
 The frontend Vite dev server listens on `http://localhost:5173`.
+
+> You only need to run `npm install` once if packages were not already installed. If the app already has node_modules, you can skip it.
 
 ## Verify the setup
 
 ### Check Docker containers
 
 ```bash
-docker compose -f proxy/docker-compose.yml ps
+sudo docker compose -f proxy/docker-compose.yml ps
 ```
 
 Look for `database` and `reverse-proxy` in the `Up` state.
@@ -208,14 +199,14 @@ npm run dev
 
 ```bash
 cd proxy
-docker compose up -d
+sudo docker compose up -d
 ```
 
 ### Stop Docker services
 
 ```bash
 cd proxy
-docker compose down
+sudo docker compose down
 ```
 
 ## If something fails
@@ -225,7 +216,7 @@ docker compose down
 - Check Docker logs:
 
 ```bash
-docker compose -f proxy/docker-compose.yml logs --tail 50
+sudo docker compose -f proxy/docker-compose.yml logs --tail 50
 ```
 
 - Make sure Docker is running and the ports are not blocked.
