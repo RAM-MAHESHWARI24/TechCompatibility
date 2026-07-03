@@ -1,0 +1,185 @@
+# New Tech Demo
+
+## Overview
+
+This repository is a full-stack demo app with three main parts:
+
+- `backend/` — Java Spring Boot app using Maven and MySQL.
+- `frontend/` — React + Vite app written in TypeScript.
+- `proxy/` — Docker Compose setup for MySQL and Nginx reverse proxy.
+
+The proxy routes:
+
+- `/` → frontend dev server on `localhost:5173`
+- `/api/` → backend on `localhost:8080`
+
+## Prerequisites
+
+Install the following on your machine:
+
+- Java 17
+- Maven (or use the included wrapper `./mvnw`)
+- Node.js and npm
+- Docker and Docker Compose
+
+## Quick start
+
+### 1. Clone the repository
+
+```bash
+git clone <repo-url>
+cd New_tech_demo
+```
+
+### 2. Start Docker services
+
+The `proxy/docker-compose.yml` file launches the database and the reverse proxy.
+
+```bash
+cd proxy
+docker compose up -d
+```
+
+This starts:
+
+- `database` — MySQL 8.0
+- `reverse-proxy` — Nginx
+
+### 3. Start the backend
+
+Open a new terminal and run:
+
+```bash
+cd /home/hemonesh-maheshwari/Desktop/New_tech_demo/backend
+./mvnw clean package
+./mvnw spring-boot:run
+```
+
+The backend listens on `http://localhost:8080`.
+
+### 4. Start the frontend
+
+Open another terminal and run:
+
+```bash
+cd /home/hemonesh-maheshwari/Desktop/New_tech_demo/frontend
+npm install
+npm run dev
+```
+
+The frontend Vite dev server listens on `http://localhost:5173`.
+
+## Verify the setup
+
+### Check Docker containers
+
+```bash
+docker compose -f proxy/docker-compose.yml ps
+```
+
+Look for `database` and `reverse-proxy` in the `Up` state.
+
+### Check backend health endpoint
+
+```bash
+curl http://localhost:8080/api/check
+```
+
+Expected output is JSON with `status` and `mysqlVersion` fields.
+
+### Check the proxy path
+
+```bash
+curl http://localhost/api/check
+```
+
+If this succeeds, Nginx is forwarding `/api/` to the backend.
+
+### Open the app in a browser
+
+- Frontend direct: `http://localhost:5173`
+- Through proxy: `http://localhost/`
+
+## Important notes
+
+- `proxy/docker-compose.yml` does not start the backend or frontend apps.
+- It only starts MySQL and Nginx.
+- You must run the backend and frontend separately.
+
+### Backend database configuration
+
+The backend uses the following database settings in `backend/src/main/resources/application.properties`:
+
+- URL: `jdbc:mysql://localhost:3306/pot_db?useSSL=false&allowPublicKeyRetrieval=true`
+- Username: `pot_user`
+- Password: `pot_pass`
+
+The app currently sets:
+
+```properties
+spring.jpa.hibernate.ddl-auto=none
+```
+
+That means the database schema is not auto-created. Ensure the `pot_db` database exists and the expected tables are present before starting the backend.
+
+## Project structure
+
+- `backend/`
+  - `pom.xml` — Maven build file
+  - `src/main/java/...` — Spring Boot source code
+  - `src/main/resources/application.properties` — backend configuration
+- `frontend/`
+  - `package.json` — app dependencies and scripts
+  - `vite.config.ts` — Vite config
+  - `src/` — React source files
+- `proxy/`
+  - `docker-compose.yml` — Docker Compose services
+  - `default.conf` — Nginx proxy config
+
+## Commands reference
+
+### Backend
+
+```bash
+cd backend
+./mvnw clean package
+./mvnw spring-boot:run
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Proxy & database
+
+```bash
+cd proxy
+docker compose up -d
+```
+
+### Stop Docker services
+
+```bash
+cd proxy
+docker compose down
+```
+
+## If something fails
+
+- Check backend logs for startup errors.
+- Check frontend terminal for Vite errors.
+- Check Docker logs:
+
+```bash
+docker compose -f proxy/docker-compose.yml logs --tail 50
+```
+
+- Make sure Docker is running and the ports are not blocked.
+
+---
+
+If you want, I can also help add a root-level Docker Compose setup that launches backend and frontend too.
