@@ -22,16 +22,66 @@ Install the following on your machine:
 - Node.js and npm
 - Docker and Docker Compose
 
+### Ubuntu dependency install
+
+```bash
+# 1. Update the system package index to ensure you get the latest versions
+sudo apt-get update && sudo apt-get upgrade -y
+
+# 2. Install Git for version control
+sudo apt-get install -y git
+
+# 3. Install Java 17 (Required to compile and run the Spring Boot backend)
+sudo apt-get install -y openjdk-17-jdk
+
+# 4. Install Node.js and npm (Required for the React frontend and Vite dev server)
+sudo apt-get install -y nodejs npm
+
+# 5. Install Docker and Docker Compose (Required for the MySQL and NGINX containers)
+sudo apt-get install -y docker.io docker-compose-v2
+
+# 6. Add your current user to the Docker group to bypass the 'sudo' requirement
+sudo usermod -aG docker $USER
+
+# 7. Apply the new group permissions immediately to the current terminal session
+newgrp docker
+```
+
+### How to verify the installation
+
+```bash
+git --version
+java -version
+node -v
+npm -v
+docker --version
+docker compose version
+```
+
+If you ever need to onboard a new laptop or provision a cloud server for this project, you can simply run this script, run `git clone` to pull down your repository, and then run `docker compose up -d` to bring the infrastructure online.
+
 ## Quick start
 
 ### 1. Clone the repository
 
 ```bash
-git clone <repo-url>
-cd New_tech_demo
+git clone https://github.com/RAM-MAHESHWARI24/TechCompatibility.git
+cd TechCompatibility
 ```
 
-### 2. Start Docker services
+### 2. Install dependencies
+
+```bash
+cd TechCompatibility
+cd proxy
+docker compose up -d
+cd ../backend
+./mvnw clean package
+cd ../frontend
+npm install
+```
+
+### 3. Start Docker services
 
 The `proxy/docker-compose.yml` file launches the database and the reverse proxy.
 
