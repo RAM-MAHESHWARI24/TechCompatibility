@@ -5,7 +5,7 @@ services:
     working_dir: /app
     # The Wormhole: Mounts their local ./frontend folder into the container
     volumes:
-      - ./frontend:/app
+      - ../frontend:/app
     # Automatically installs NPM packages and starts the Vite server
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     ports:
@@ -20,7 +20,7 @@ services:
     image: maven:3.9-eclipse-temurin-17
     working_dir: /app
     volumes:
-      - ./backend:/app
+      - ../backend:/app
       # Caches Maven downloads so it doesn't re-download the internet on every boot
       - maven-data:/root/.m2 
     command: bash -c "chmod +x ./mvnw && ./mvnw spring-boot:run"
@@ -45,7 +45,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./proxy/default.conf:/etc/nginx/conf.d/default.conf
+      - ./default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - frontend
       - backend
