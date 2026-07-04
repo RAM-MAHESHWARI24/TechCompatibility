@@ -4,9 +4,14 @@ frontend/dist/
 
 # Spring Boot
 backend/target/
-backend/.mvn/
-backend/mvnw
-backend/mvnw.cmd
+
+# Keep Maven wrapper files available for fresh clones
+!backend/.mvn/
+!backend/.mvn/wrapper/
+!backend/.mvn/wrapper/maven-wrapper.properties
+!backend/.mvn/wrapper/maven-wrapper.jar
+!backend/mvnw
+!backend/mvnw.cmd
 
 # IDEs / OS
 .idea/
