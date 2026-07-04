@@ -15,50 +15,29 @@ The proxy routes:
 
 ## Prerequisites
 
-Install the following on your machine:
+You need the following on your machine:
 
-- Java 17
-- Maven (or use the included wrapper `./mvnw`)
-- Node.js and npm
-- Docker and Docker Compose
+- Git
+- Docker Engine + Docker Compose
 
-### Ubuntu dependency install
+### Ubuntu install commands
 
 ```bash
-# 1. Update the system package index to ensure you get the latest versions
-sudo apt-get update && sudo apt-get upgrade -y
-
-# 2. Install Git for version control
-sudo apt-get install -y git
-
-# 3. Install Java 17 (Required to compile and run the Spring Boot backend)
-sudo apt-get install -y openjdk-17-jdk
-
-# 4. Install Node.js and npm (Required for the React frontend and Vite dev server)
-sudo apt-get install -y nodejs npm
-
-# 5. Install Docker and Docker Compose (Required for the MySQL and NGINX containers)
-sudo apt-get install -y docker.io docker-compose-v2
-
-# 6. Add your current user to the Docker group to bypass the 'sudo' requirement
+sudo apt-get update
+sudo apt-get install -y git docker.io docker-compose-v2
 sudo usermod -aG docker $USER
-
-# 7. Apply the new group permissions immediately to the current terminal session
 newgrp docker
 ```
 
-### How to verify the installation
+### Verify the installation
 
 ```bash
 git --version
-java -version
-node -v
-npm -v
 docker --version
 docker compose version
 ```
 
-If you ever need to onboard a new laptop or provision a cloud server for this project, you can simply run this script, clone the repository, and then run `sudo docker compose up -d` to bring the infrastructure online.
+If Docker still does not resolve correctly, use the manual install fallback section near the bottom.
 
 ## Quick start
 
@@ -69,11 +48,7 @@ git clone https://github.com/RAM-MAHESHWARI24/TechCompatibility.git
 cd TechCompatibility
 ```
 
-If dependencies were already installed, you do not need to reinstall them. Use three separate terminals for the three services below.
-
-### 1. Start Docker services
-
-Open Terminal 1 and run:
+### 1. Start the Docker services
 
 ```bash
 cd proxy
@@ -85,30 +60,21 @@ This starts:
 - `database` — MySQL 8.0
 - `reverse-proxy` — Nginx
 
-### 2. Start the backend
+### 2. Start the app
 
-Open Terminal 2 and run:
-
-```bash
-cd backend
-./mvnw clean package
-./mvnw spring-boot:run
-```
-
-The backend listens on `http://localhost:8080`.
-
-### 3. Start the frontend
-
-Open Terminal 3 and run:
+From the repository root, run:
 
 ```bash
-cd frontend
-npm run dev
+./start.sh
 ```
 
-The frontend Vite dev server listens on `http://localhost:5173`.
+The script starts:
 
-> You only need to run `npm install` once if packages were not already installed. If the app already has node_modules, you can skip it.
+- the backend on `http://localhost:8080`
+- the frontend on `http://localhost:5173`
+- the proxy on `http://localhost/`
+
+> If the app was already installed locally, you can skip `npm install` and just run the script.
 
 ## Verify the setup
 
@@ -207,6 +173,28 @@ sudo docker compose up -d
 ```bash
 cd proxy
 sudo docker compose down
+```
+
+## Manual install fallback
+
+If Docker does not resolve correctly or the startup script fails because the local toolchain is missing, install the required tools manually:
+
+```bash
+sudo apt-get update && sudo apt-get upgrade -y
+sudo apt-get install -y git openjdk-17-jdk nodejs npm docker.io docker-compose-v2
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+Then verify:
+
+```bash
+git --version
+java -version
+node -v
+npm -v
+docker --version
+docker compose version
 ```
 
 ## If something fails
