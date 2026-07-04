@@ -69,44 +69,69 @@ check_prerequisites() {
   local missing=()
   local installed=()
 
+  echo "=========================================="
+  echo "Checking Prerequisites"
+  echo "=========================================="
+
   if command -v docker >/dev/null 2>&1; then
+    docker_version=$(docker --version)
+    echo "✓ $docker_version"
     installed+=("docker")
   else
+    echo "✗ Docker not found"
     missing+=("docker")
   fi
 
-  if docker compose version >/dev/null 2>&1 2>/dev/null || command -v docker-compose >/dev/null 2>&1; then
+  if docker compose version >/dev/null 2>&1 2>&1 || command -v docker-compose >/dev/null 2>&1; then
+    compose_version=$(docker compose version 2>/dev/null || docker-compose --version)
+    echo "✓ $compose_version"
     installed+=("docker compose")
   else
+    echo "✗ Docker Compose not found"
     missing+=("docker compose")
   fi
 
   if detect_java_home; then
+    java_version=$(java -version 2>&1 | head -1)
+    echo "✓ $java_version"
     installed+=("java")
   else
+    echo "✗ Java not found"
     missing+=("java")
   fi
 
   if command -v node >/dev/null 2>&1; then
+    node_version=$(node --version)
+    echo "✓ Node $node_version"
     installed+=("node")
   else
+    echo "✗ Node not found"
     missing+=("node")
   fi
 
   if command -v npm >/dev/null 2>&1; then
+    npm_version=$(npm --version)
+    echo "✓ npm $npm_version"
     installed+=("npm")
   else
+    echo "✗ npm not found"
     missing+=("npm")
   fi
 
-  echo "Detected tools: ${installed[*]:-none}"
+  echo "=========================================="
 
   if [ ${#missing[@]} -gt 0 ]; then
-    echo "Missing required tools: ${missing[*]}"
+    echo ""
+    echo "Missing tools: ${missing[*]}"
     echo "Installing them now..."
+    echo ""
     install_prerequisites
-    echo "Re-checking prerequisites..."
+    echo ""
+    echo "Rechecking prerequisites..."
     check_prerequisites
+  else
+    echo "All prerequisites satisfied!"
+    echo ""
   fi
 }
 
