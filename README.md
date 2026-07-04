@@ -76,7 +76,12 @@ The script starts:
 
 > If the app was already installed locally, you can skip `npm install` and just run the script.
 
-## Verify the setup
+### Open the app in a browser
+
+- Frontend direct: `http://localhost:5173`
+- Through proxy: `http://localhost/`
+
+## You can Verify the setup using below steps/commands
 
 ### Check Docker containers
 
@@ -102,16 +107,13 @@ curl http://localhost/api/check
 
 If this succeeds, Nginx is forwarding `/api/` to the backend.
 
-### Open the app in a browser
 
-- Frontend direct: `http://localhost:5173`
-- Through proxy: `http://localhost/`
 
 ## Important notes
 
 - `proxy/docker-compose.yml` does not start the backend or frontend apps.
 - It only starts MySQL and Nginx.
-- You must run the backend and frontend separately.
+- You must run the backend and frontend separately manually or by using start.sh script.
 
 ### Backend database configuration
 

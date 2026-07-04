@@ -17,16 +17,16 @@ sudo docker compose up -d
 cd "$ROOT_DIR/backend"
 echo "Starting backend..."
 if [ -f "$ROOT_DIR/backend/mvnw" ]; then
-  (bash "$ROOT_DIR/backend/mvnw" spring-boot:run > /tmp/new-tech-demo-backend.log 2>&1) &
+  (bash "$ROOT_DIR/backend/mvnw" spring-boot:run 2>&1 | tee /tmp/new-tech-demo-backend.log) &
 else
   echo "Maven wrapper not found; falling back to system Maven."
-  (mvn spring-boot:run > /tmp/new-tech-demo-backend.log 2>&1) &
+  (mvn spring-boot:run 2>&1 | tee /tmp/new-tech-demo-backend.log) &
 fi
 BACKEND_PID=$!
 
 cd "$ROOT_DIR/frontend"
 echo "Starting frontend..."
-(npm run dev -- --host 0.0.0.0 > /tmp/new-tech-demo-frontend.log 2>&1) &
+(npm run dev -- --host 0.0.0.0 2>&1 | tee /tmp/new-tech-demo-frontend.log) &
 FRONTEND_PID=$!
 
 echo "Backend logs: /tmp/new-tech-demo-backend.log"
