@@ -17,9 +17,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 24px 28px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 18px;
-  /* background: linear-gradient(135deg, #f8fbff, #eef4ff); */
+  background: rgba(255, 255, 255, 0.85); /* Semi-transparent white to block image clutter behind text */
+  backdrop-filter: blur(5px);
   box-shadow: var(--shadow);
 }
 
@@ -55,10 +56,11 @@
 }
 
 .panel-card {
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 18px;
   padding: 24px;
-  /* background: white; */
+  background: rgba(255, 255, 255, 0.85); /* Semi-transparent white to keep text readable */
+  backdrop-filter: blur(5px);
   box-shadow: var(--shadow);
 }
 
