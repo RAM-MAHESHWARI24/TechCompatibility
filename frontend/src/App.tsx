@@ -52,15 +52,43 @@ export default function App() {
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, []);
 
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmed = searchValue.trim().toLowerCase();
-    if (trimmed && trimmed.includes('detail')) {
-      navigateTo('details');
-    } else if (trimmed) {
-      navigateTo('create');
-    } else {
+    const trimmed = searchValue.trim();
+    if (!trimmed) {
       navigateTo('home');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/lemf');
+      if (!response.ok) throw new Error('Failed to load Lemf records');
+      const data = await response.json() as LemfRecord[];
+      setRows(data);
+
+      const matched = data.find(row => row.name.toLowerCase() === trimmed.toLowerCase());
+      if (matched) {
+        setSelectedRecord(matched);
+        navigateTo('details');
+      } else {
+        setForm({
+          ...emptyForm,
+          name: trimmed,
+        });
+        navigateTo('create');
+      }
+    } catch {
+      const matched = rows.find(row => row.name.toLowerCase() === trimmed.toLowerCase());
+      if (matched) {
+        setSelectedRecord(matched);
+        navigateTo('details');
+      } else {
+        setForm({
+          ...emptyForm,
+          name: trimmed,
+        });
+        navigateTo('create');
+      }
     }
   };
 
@@ -96,8 +124,8 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-left">
           <p className="eyebrow">Lemf Management</p>
-          <h1>React port of Lemf page</h1>
-          <p className="subtitle">This replica keeps the original flow and routes to dummy pages with simple text.</p>
+          <h1>LEMF MANAGEMENT PORTAL</h1>
+
         </div>
         <div className="topbar-actions">
           <a href="#display" className="text-link" onClick={(event) => { event.preventDefault(); navigateTo('display'); }}>
@@ -105,6 +133,10 @@ export default function App() {
           </a>
           <button className="primary-btn" onClick={() => navigateTo('create')}>
             Create New
+          </button>
+
+          <button className="primary-btn" onClick={() => navigateTo('home')}>
+            Home
           </button>
         </div>
       </header>
@@ -117,7 +149,7 @@ export default function App() {
                 <p className="eyebrow">Home</p>
                 <h2>Select Lemf</h2>
               </div>
-              <span className="chip">Dummy routing</span>
+              {/* <span className="chip">Dummy routing</span> */}
             </div>
 
             <form className="search-form" onSubmit={handleSearch}>

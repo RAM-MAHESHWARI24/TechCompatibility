@@ -1,9 +1,15 @@
 .app-shell {
   min-height: 100vh;
-  padding: 24px;
+  padding: 12px;
   display: flex;
+  /* align-items: center; */
+  justify-content: space-around;
+  width: 100%;
+  backdrop-filter: blur(10px);
+  font-weight: 900;
+
   flex-direction: column;
-  gap: 24px;
+  /* gap: 12px; */
 }
 
 .topbar {
@@ -13,7 +19,7 @@
   padding: 24px 28px;
   border: 1px solid var(--border);
   border-radius: 18px;
-  background: linear-gradient(135deg, #f8fbff, #eef4ff);
+  /* background: linear-gradient(135deg, #f8fbff, #eef4ff); */
   box-shadow: var(--shadow);
 }
 
@@ -45,13 +51,14 @@
 
 .main-panel {
   min-width: 0;
+
 }
 
 .panel-card {
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 24px;
-  background: white;
+  /* background: white; */
   box-shadow: var(--shadow);
 }
 
@@ -190,6 +197,7 @@ textarea {
 }
 
 @media (max-width: 860px) {
+
   .topbar,
   .panel-header {
     flex-direction: column;

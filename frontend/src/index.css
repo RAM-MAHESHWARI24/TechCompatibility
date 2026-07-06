@@ -8,9 +8,9 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --text: #475569;
+  --text: #01142e;
   --text-h: #0f172a;
-  --border: #dbe4f0;
+  --border: #000;
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
@@ -20,7 +20,12 @@
 
 body {
   margin: 0;
-  background: #f3f7ff;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('../public/assets/indian-flag.jpg');
+  /* background: url('../public//assets//indian-flag.jpg'); */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* background: #f3f7ff; */
 }
 
 #root {
