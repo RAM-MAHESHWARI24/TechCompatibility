@@ -1,15 +1,16 @@
 .app-shell {
   min-height: 100vh;
+  /* min-width: 100vw; */
   padding: 12px;
   display: flex;
   /* align-items: center; */
-  justify-content: space-around;
+  /* justify-content: space-around; */
   width: 100%;
   backdrop-filter: blur(10px);
   font-weight: 900;
 
   flex-direction: column;
-  /* gap: 12px; */
+  gap: 12px;
 }
 
 .topbar {
@@ -19,7 +20,8 @@
   padding: 24px 28px;
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.85); /* Semi-transparent white to block image clutter behind text */
+  background: rgba(255, 255, 255, 0.85);
+  /* Semi-transparent white to block image clutter behind text */
   backdrop-filter: blur(5px);
   box-shadow: var(--shadow);
 }
@@ -59,7 +61,8 @@
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 18px;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.85); /* Semi-transparent white to keep text readable */
+  background: rgba(255, 255, 255, 0.85);
+  /* Semi-transparent white to keep text readable */
   backdrop-filter: blur(5px);
   box-shadow: var(--shadow);
 }
@@ -213,4 +216,55 @@ textarea {
     grid-template-columns: 1fr;
     display: grid;
   }
+}
+
+/* Toast Notifications */
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 14px 24px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-success {
+  background-color: #10b981; /* Green */
+  border: 1px solid #059669;
+}
+
+.toast-error {
+  background-color: #ef4444; /* Red */
+  border: 1px solid #dc2626;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Login Page CSS */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 24px);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
 }

@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import type { LemfRecord } from './types';
+import Home from './Pages/home';
+import DisplayLemf from './Pages/display_lemf';
+import CreateLemf from './Pages/create_lemf';
+import Details from './Pages/details';
+import Login from './Pages/login';
+import EditLemf from './Pages/edit_lemf';
 
-type PageKey = 'home' | 'display' | 'create' | 'details';
+type PageKey = 'home' | 'display' | 'create' | 'details' | 'edit';
 
 const emptyForm = {
   name: '',
@@ -19,38 +25,158 @@ export default function App() {
   const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<LemfRecord | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Authentication State
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => localStorage.getItem('isLoggedIn') === 'true');
+  const [user, setUser] = useState<string>(() => localStorage.getItem('username') || '');
+  const [editRecord, setEditRecord] = useState<LemfRecord | null>(null);
 
   const navigateTo = (page: PageKey) => {
     setActivePage(page);
     window.history.pushState({}, '', `#${page}`);
   };
 
+  const handleSessionExpired = () => {
+    setIsLoggedIn(false);
+    setUser('');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('username');
+    localStorage.removeItem('token');
+    setToast({ message: 'Session expired. Please log in again.', type: 'error' });
+    setTimeout(() => setToast(null), 5000);
+  };
+
+  const loadRows = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/lemf', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.status === 401) {
+        handleSessionExpired();
+        return;
+      }
+      if (!response.ok) throw new Error('Failed to load Lemf records');
+      const data = await response.json() as LemfRecord[];
+      setRows(data);
+    } catch {
+      setRows([]);
+    }
+  };
+
   useEffect(() => {
     const syncFromHash = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash === 'display' || hash === 'create' || hash === 'details' || hash === 'home') {
+      if (hash === 'display' || hash === 'create' || hash === 'details' || hash === 'edit' || hash === 'home') {
         setActivePage(hash as PageKey);
       } else {
         setActivePage('home');
       }
     };
 
-    const loadRows = async () => {
-      try {
-        const response = await fetch('/api/lemf');
-        if (!response.ok) throw new Error('Failed to load Lemf records');
-        const data = await response.json() as LemfRecord[];
-        setRows(data);
-      } catch {
-        setRows([]);
-      }
-    };
-
+    if (isLoggedIn) {
+      loadRows();
+    }
     syncFromHash();
-    loadRows();
     window.addEventListener('hashchange', syncFromHash);
     return () => window.removeEventListener('hashchange', syncFromHash);
-  }, []);
+  }, [isLoggedIn]);
+
+  const handleLogin = async (username: string, pass: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: pass }),
+      });
+
+      if (!response.ok) return false;
+      const data = await response.json();
+      if (data.status === 'success') {
+        setIsLoggedIn(true);
+        setUser(username);
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('username', username);
+        localStorage.setItem('token', data.token);
+        setToast({ message: `Welcome, ${username}! Login successful.`, type: 'success' });
+        setTimeout(() => setToast(null), 3000);
+        navigateTo('home');
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUser('');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('username');
+    localStorage.removeItem('token');
+    setToast({ message: 'Logged out successfully.', type: 'success' });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this record?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/lemf/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.status === 401) {
+        handleSessionExpired();
+        return;
+      }
+      if (!response.ok) throw new Error('Delete failed');
+      setRows((current) => current.filter((row) => row.id !== id));
+      setToast({ message: 'Record deleted successfully.', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+      if (selectedRecord && selectedRecord.id === id) {
+        setSelectedRecord(null);
+      }
+      navigateTo('display');
+    } catch {
+      setToast({ message: 'Failed to delete record.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
+  const handleUpdate = async (updatedForm: LemfRecord) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/lemf/${updatedForm.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedForm),
+      });
+      if (response.status === 401) {
+        handleSessionExpired();
+        return;
+      }
+      if (!response.ok) throw new Error('Failed to update');
+      const updated = await response.json() as LemfRecord;
+      setRows((current) => current.map((row) => (row.id === updated.id ? updated : row)));
+      setSelectedRecord(updated);
+      setToast({ message: `Successfully updated entry "${updated.name}"!`, type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+      navigateTo('display');
+    } catch {
+      setToast({ message: 'Failed to update record.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
 
   const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -61,7 +187,16 @@ export default function App() {
     }
 
     try {
-      const response = await fetch('/api/lemf');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/lemf', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.status === 401) {
+        handleSessionExpired();
+        return;
+      }
       if (!response.ok) throw new Error('Failed to load Lemf records');
       const data = await response.json() as LemfRecord[];
       setRows(data);
@@ -95,9 +230,13 @@ export default function App() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch('/api/lemf', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           name: form.name,
           category: form.category,
@@ -106,26 +245,45 @@ export default function App() {
           status: form.status,
         }),
       });
-
+      if (response.status === 401) {
+        handleSessionExpired();
+        return;
+      }
       if (!response.ok) throw new Error('Failed to save');
       const saved = await response.json() as LemfRecord;
       setRows((current) => [saved, ...current]);
       setSelectedRecord(saved);
       setMessage(`Saved ${saved.name} to MySQL.`);
+      setToast({ message: `Successfully created entry "${saved.name}"!`, type: 'success' });
+      setTimeout(() => setToast(null), 3000);
       setForm(emptyForm);
       navigateTo('details');
     } catch {
       setMessage('Save failed. Check the backend and MySQL connection.');
+      setToast({ message: 'Save failed. Check the backend and MySQL connection.', type: 'error' });
+      setTimeout(() => setToast(null), 4000);
     }
   };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="app-shell" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <Login onLogin={handleLogin} />
+        {toast && (
+          <div className={`toast-notification toast-${toast.type}`}>
+            {toast.message}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-left">
-          <p className="eyebrow">Lemf Management</p>
+          <p className="eyebrow">Logged in as: {user}</p>
           <h1>LEMF MANAGEMENT PORTAL</h1>
-
         </div>
         <div className="topbar-actions">
           <a href="#display" className="text-link" onClick={(event) => { event.preventDefault(); navigateTo('display'); }}>
@@ -138,156 +296,60 @@ export default function App() {
           <button className="primary-btn" onClick={() => navigateTo('home')}>
             Home
           </button>
+
+          <button className="secondary-btn" onClick={handleLogout} style={{ background: '#f1f5f9', color: '#475569' }}>
+            Logout
+          </button>
         </div>
       </header>
 
       <main className="main-panel">
         {activePage === 'home' && (
-          <section className="panel-card">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Home</p>
-                <h2>Select Lemf</h2>
-              </div>
-              {/* <span className="chip">Dummy routing</span> */}
-            </div>
-
-            <form className="search-form" onSubmit={handleSearch}>
-              <label htmlFor="sName">Lemf Name</label>
-              <div className="search-row">
-                <input
-                  id="sName"
-                  name="sName"
-                  value={searchValue}
-                  onChange={(event) => setSearchValue(event.target.value)}
-                  placeholder="Type a name"
-                />
-                <button className="primary-btn" type="submit">
-                  Go
-                </button>
-              </div>
-            </form>
-
-            <div className="info-box">
-              <p>Enter a name to go to a dummy details page or create page.</p>
-              <p className="hint">Use the buttons above to open the display or creation flow directly.</p>
-              {message && <p className="hint success">{message}</p>}
-            </div>
-          </section>
+          <Home
+            searchValue={searchValue}
+            setSearchValue={setSearchValue}
+            handleSearch={handleSearch}
+            message={message}
+          />
         )}
 
         {activePage === 'display' && (
-          <section className="panel-card">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Display</p>
-                <h2>Lemf_display page</h2>
-              </div>
-              <span className="chip">Dummy page</span>
-            </div>
-
-            <p className="page-text">This page loads rows from the MySQL-backed Lemf API.</p>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Owner</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>{row.name}</td>
-                    <td>{row.status}</td>
-                    <td>{row.assignedTo}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
+          <DisplayLemf
+            rows={rows}
+            onEdit={(record) => {
+              setEditRecord(record);
+              navigateTo('edit');
+            }}
+            onDelete={handleDelete}
+          />
         )}
 
         {activePage === 'create' && (
-          <section className="panel-card">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Create</p>
-                <h2>Lemf_create page</h2>
-              </div>
-              <span className="chip">Dummy page</span>
-            </div>
-
-            <p className="page-text">This page saves a new Lemf record to the MySQL-backed API.</p>
-            <form onSubmit={handleSubmit}>
-              <div className="form-grid">
-                <label>
-                  Lemf Name
-                  <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
-                </label>
-                <label>
-                  Category
-                  <input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} />
-                </label>
-                <label>
-                  Assigned To
-                  <input value={form.assignedTo} onChange={(event) => setForm({ ...form, assignedTo: event.target.value })} />
-                </label>
-                <label>
-                  Status
-                  <input value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} />
-                </label>
-                <label>
-                  Notes
-                  <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
-                </label>
-              </div>
-              <div className="actions">
-                <button className="secondary-btn" type="button" onClick={() => navigateTo('home')}>Back</button>
-                <button className="primary-btn" type="submit">Save</button>
-              </div>
-            </form>
-          </section>
+          <CreateLemf
+            form={form}
+            setForm={setForm}
+            handleSubmit={handleSubmit}
+            navigateTo={navigateTo}
+          />
         )}
 
         {activePage === 'details' && (
-          <section className="panel-card">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Details</p>
-                <h2>Lemf_details page</h2>
-              </div>
-              <span className="chip">Dummy page</span>
-            </div>
+          <Details selectedRecord={selectedRecord} />
+        )}
 
-            <p className="page-text">This page shows the last record created through the MySQL-backed API.</p>
-            {selectedRecord ? (
-              <div className="details-grid">
-                <div className="detail-box">
-                  <span>Request ID</span>
-                  <strong>{selectedRecord.id}</strong>
-                </div>
-                <div className="detail-box">
-                  <span>Status</span>
-                  <strong>{selectedRecord.status}</strong>
-                </div>
-                <div className="detail-box">
-                  <span>Owner</span>
-                  <strong>{selectedRecord.assignedTo}</strong>
-                </div>
-                <div className="detail-box">
-                  <span>Category</span>
-                  <strong>{selectedRecord.category}</strong>
-                </div>
-              </div>
-            ) : (
-              <p className="page-text">No record selected yet. Save one from the create page.</p>
-            )}
-          </section>
+        {activePage === 'edit' && editRecord && (
+          <EditLemf
+            record={editRecord}
+            handleUpdate={handleUpdate}
+            navigateTo={navigateTo}
+          />
         )}
       </main>
+      {toast && (
+        <div className={`toast-notification toast-${toast.type}`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
