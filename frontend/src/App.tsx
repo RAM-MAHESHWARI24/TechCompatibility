@@ -114,6 +114,7 @@ export default function App() {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    console.log(`${user} logged out successfully`);
     setUser('');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('username');

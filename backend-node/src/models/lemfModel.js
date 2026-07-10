@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const bcrypt = require('bcryptjs');
 
 class LemfModel {
   static mapRowToDto(row) {
@@ -52,10 +53,27 @@ class LemfModel {
       
       const [users] = await db.query('SELECT COUNT(*) as count FROM lemf_login_details');
       if (users[0].count === 0) {
+        const hashedPassword = await bcrypt.hash('admin123', 10);
         await db.query(
-          "INSERT INTO lemf_login_details (username, password) VALUES ('admin', 'admin123')"
+          "INSERT INTO lemf_login_details (username, password) VALUES ('admin', ?)",
+          [hashedPassword]
         );
-        console.log('Seeded default admin user (username: admin, password: admin123).');
+        console.log('Seeded default admin user (username: admin) with hashed password.');
+      } else {
+        // Migration: check if 'admin' password is plain text and migrate to hash
+        const [adminRows] = await db.query("SELECT * FROM lemf_login_details WHERE username = 'admin'");
+        if (adminRows.length > 0) {
+          const adminUser = adminRows[0];
+          const isHashed = adminUser.password.startsWith('$2a$') || adminUser.password.startsWith('$2b$') || adminUser.password.startsWith('$2y$');
+          if (!isHashed) {
+            const hashedPassword = await bcrypt.hash(adminUser.password, 10);
+            await db.query(
+              "UPDATE lemf_login_details SET password = ? WHERE id = ?",
+              [hashedPassword, adminUser.id]
+            );
+            console.log('Migrated existing plaintext admin password to hashed format.');
+          }
+        }
       }
     } catch (err) {
       console.error('Error initializing tables:', err);

@@ -1,3 +1,4 @@
+require('./config/logger');
 const app = require('./app');
 const LemfModel = require('./models/lemfModel');
 const dotenv = require('dotenv');
