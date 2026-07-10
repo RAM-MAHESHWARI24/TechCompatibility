@@ -25,7 +25,7 @@ app.use((req, res, next) => {
 // Route for receiving frontend logs
 app.post('/api/logs', (req, res) => {
   const { level, message } = req.body;
-  const prefixedMessage = `[frontEnd] ${message}`;
+  const prefixedMessage = `[Front-End] ${message}`;
 
   if (level === 'ERROR') {
     console.error(prefixedMessage);
