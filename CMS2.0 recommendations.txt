@@ -1,0 +1,49 @@
+             
+
+            [ User's Web Browser / Device ]
+             |                          ^
+  Sends:     |                          | Receives:
+User clicks, |                          | The rendered UI,
+ interactions|                          | Live Media Streams
+             v                          |
++---------------------------------------------------------+
+|                      FRONTEND                           |
+|         (Suggestions: React.js or Angular)              |
++---------------------------------------------------------+
+             |                          ^
+  Sends:     |                          | Receives:
+ Encrypted   |                          | UI-ready, clean 
+ HTTPS Reqs &|                          | JSON Data & Live
+ WebSockets  v                          | Video Streams
++---------------------------------------------------------+
+|            REVERSE PROXY / API GATEWAY                  |
+|          (Suggestions: NGINX or Envoy)                  |
++---------------------------------------------------------+
+             |                          ^
+  Sends:     |                          | Receives:
+ Decrypted,  |                          | Trimmed & 
+ internal    |                          | formatted JSON
+ HTTP/JSON   v                          | responses
++---------------------------------------------------------+
+|             BACKEND FOR FRONTEND (BFF)                  |
+|      (Suggestions: GO or Node.js  or Python FastAPI)    |
++---------------------------------------------------------+
+             |                          ^
+  Sends:     |                          | Receives:
+ High-speed  |                          | Heavy, raw, 
+ binary gRPC/|                          | unformatted 
+ Protobuf    v                          | backend data
++---------------------------------------------------------+
+|                   CORE BACKEND                          |
+|            (Suggestions: C++ or Go or Rust)             |
++---------------------------------------------------------+
+             |                          ^
+  Sends:     |                          | Receives:
+ SQL/NoSQL   |                          | Database rows, 
+ Queries,    |                          | files, and Raw 
+ TCP/UDP cmdsv                          | Audio/Video feeds
++---------------------------------------------------------+
+|               DATA & MEDIA LAYER                        |
+|   (PostgreSQL, Reddis ,
+|   MinIO Object Storage, LiveKit WebRTC)                 |
++---------------------------------------------------------+
