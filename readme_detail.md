@@ -1,62 +1,71 @@
 # Detailed Architectural Readme
 
-This document provides a highly detailed, line-by-line trace of the core workflows in the Tech Compatibility Project. It maps out exactly how the frontend UI triggers state changes, how those requests flow through the Express backend to the database, and how sensitive data like passwords are encrypted and verified.
+This document provides a detailed trace of core workflows, component execution paths, and security processes in the decomposed Tech Compatibility Project.
 
 ---
 
-## 1. Frontend Component & Logging Flow
+## 1. Frontend & Routing Architecture
 
-The React frontend utilizes a central state component, `App.tsx`, which serves as the router and primary data store.
+The client-side application runs as a Single Page Application (SPA) compiled under Vite.
 
-### Global Interceptors
-Before the UI even mounts, the global logging interceptor is invoked:
-- **Initialization**: [main.tsx](./frontend/src/main.tsx#L1) imports `./utils/logger` at the very top.
-- **Log Trapper**: [logger.ts](./frontend/src/utils/logger.ts#L45-L59) overrides `console.log`, `console.warn`, and `console.error`.
-- **Backend Transport**: When a log is caught, it formats the arguments and triggers an asynchronous `fetch('/api/logs')` ([logger.ts](./frontend/src/utils/logger.ts#L30-L36)).
-- **Backend Logging Engine**: The backend Express server catches this on the route defined at [app.js](./backend-node/src/app.js#L25-L39). It prepends `[Front-End]` to the payload ([app.js](./backend-node/src/app.js#L28)) and invokes its native console, which is in turn intercepted by [backend-node/src/config/logger.js](./backend-node/src/config/logger.js) to write directly into `logs/app.log`.
+### Global Interceptors & Logging
+1. **logger.ts import**: [main.tsx](./frontend/src/main.tsx#L2) imports `./utils/logger` at the top of the bundle entry.
+2. **Overrides**: [logger.ts](./frontend/src/utils/logger.ts) replaces standard console logging methods (`console.log`, `console.warn`, `console.error`) with custom hooks.
+3. **Transport**: When console messages occur, they are intercepted and forwarded via an asynchronous `POST /api/logs` request back to the server gateway.
+4. **Proxy**: The frontend NGINX server catches `/api/logs` (served on port `8000`) and passes them back to console output.
 
-### UI Routing
-- The current page view is determined by the `activePage` state inside [App.tsx](./frontend/src/App.tsx#L22).
-- URL Hash changes (e.g., `#home`, `#login`) are tracked by a `hashchange` event listener on `window` ([App.tsx](./frontend/src/App.tsx#L70-L86)).
+### Client Routing (React Router DOM)
+- The application uses `react-router-dom`'s HTML5 History API rather than standard URL hashes (e.g. `/#display`).
+- **Setup**: [main.tsx](./frontend/src/main.tsx#L10) mounts the root component inside `<BrowserRouter>`.
+- **Navigation Action**: The `navigateTo` function in [App.tsx](./frontend/src/App.tsx#L32) acts as a mapping wrapper around `react-router-dom`'s `useNavigate()` hook. It maps string aliases like `'home'` to `/` and `'display'` to `/display`.
+- **Views**: The main panel uses `<Routes>` to switch components dynamically without full page reloads:
+  - Path `/` renders [home.tsx](./frontend/src/Pages/home.tsx).
+  - Path `/display` renders [display_lemf.tsx](./frontend/src/Pages/display_lemf.tsx).
+  - Path `/create` renders [create_lemf.tsx](./frontend/src/Pages/create_lemf.tsx).
+  - Path `/details` renders [details.tsx](./frontend/src/Pages/details.tsx).
+  - Path `/edit` renders [edit_lemf.tsx](./frontend/src/Pages/edit_lemf.tsx).
 
 ---
 
-## 2. Authentication & Password Encryption Flow
+## 2. Authentication & Data Seeding
 
-Passwords are **never** stored in plain text. The application utilizes `bcryptjs` with salt rounds to securely hash credentials.
+Database credentials and user details are managed entirely in the isolated `auth-service` database (`auth_db`).
 
-### 2.1 Password Initialization (The "Seed")
-When the Node.js backend starts, it ensures the database is correctly constructed.
-- **Schema Initialization**: `server.js` calls `LemfModel.initializeTable()`.
-- **Admin Seeding**: Inside [lemfModel.js](./backend-node/src/models/lemfModel.js#L54-L62), it checks if the `lemf_login_details` table is empty. If it is, it hashes the string `'admin123'` using `bcrypt.hash('admin123', 10)` ([lemfModel.js](./backend-node/src/models/lemfModel.js#L56)).
-- It inserts the username `admin` and the generated hash string (starting with `$2a$10$...`) directly into the table.
+### 2.1 Admin Seeding & Initialization
+1. **Startup**: When the `auth-service` container starts, `server.js` triggers `AuthModel.initializeTable()` ([auth-service/src/server.js](./auth-service/src/server.js#L11)).
+2. **Schema Creation**: Inside [authModel.js](./auth-service/src/models/authModel.js#L5), it creates the `lemf_login_details` table if it doesn't already exist.
+3. **Admin User Generation**: It checks if there are any records in `lemf_login_details`. If empty, it securely hashes the default admin password `'admin123'` using `bcrypt.hash('admin123', 10)` and seeds the default `admin` credentials ([authModel.js](./auth-service/src/models/authModel.js#L20)).
 
-### 2.2 Login Call Flow
-1. **User Action**: The user enters their username and password into the inputs defined in [login.tsx](./frontend/src/Pages/login.tsx#L42-L96) and submits the form.
-2. **Frontend Handler**: The submit triggers `handleSubmit` ([login.tsx](./frontend/src/Pages/login.tsx#L15)), which calls the `onLogin` prop. This prop maps directly to the `handleLogin` function in [App.tsx](./frontend/src/App.tsx#L88).
-3. **API Dispatch**: `handleLogin` executes `fetch('/api/auth/login')` with a JSON payload of the credentials ([App.tsx](./frontend/src/App.tsx#L90-L94)).
-4. **Backend Router**: The proxy sends this to Express. [app.js](./backend-node/src/app.js#L5) mounts `/api/auth` to `authRoutes.js`. [authRoutes.js](./backend-node/src/routes/authRoutes.js#L5) maps the `/login` POST request directly to the `login` function in the Auth Controller.
-5. **Controller Verification**: 
-   - [authController.js](./backend-node/src/controllers/authController.js#L7-L44) executes.
-   - It retrieves the user's hashed password from MySQL via [AuthModel.findByUsername](./backend-node/src/models/authModel.js#L4-L8).
-   - **Encryption Check**: It securely compares the plain-text password from the HTTP body against the hashed DB password using `await bcrypt.compare(password, user.password)` ([authController.js](./backend-node/src/controllers/authController.js#L18)).
-6. **Token Generation**: If the password matches, the controller signs a JSON Web Token (JWT) using the `JWT_SECRET` (fallback `'secretkey123'`) at [authController.js](./backend-node/src/controllers/authController.js#L24-L28).
-7. **Frontend Resolution**: The frontend receives the JWT, sets `isLoggedIn` to `true`, and stores the token in `localStorage`.
+### 2.2 Login and Verification Flow
+1. **Input Submission**: The user submits their login details via the form in [login.tsx](./frontend/src/Pages/login.tsx).
+2. **Callback to App**: Submission fires the `onLogin` callback, routing to `handleLogin` in [App.tsx](./frontend/src/App.tsx#L88).
+3. **API Dispatch**: `handleLogin` makes a POST request to `/api/auth/login` containing the username and password payload.
+4. **NGINX Proxy**: The request reaches the frontend gateway. NGINX matches the `/api/auth` prefix and routes the request to the `auth-service` container on port `8080` ([frontend/nginx.conf](./frontend/nginx.conf#L4)).
+5. **Auth Route Processing**: The Express framework in `auth-service` maps the request to `authController.login` ([auth-service/src/routes/authRoutes.js](./auth-service/src/routes/authRoutes.js)).
+6. **Bcrypt Verification**:
+   - `authController.login` queries the user record using `AuthModel.findByUsername`.
+   - The controller executes `await bcrypt.compare(password, user.password)` to secure-match the plaintext login attempt with the hashed password from the database.
+7. **JWT Token Signing**: If verification succeeds, a JWT payload containing the user's ID and username is signed using `JWT_SECRET` (defaults to `'secretkey123'`).
+8. **Client Storage**: The signed JWT token is sent back to the frontend, where it is saved in the browser's `localStorage` and used as a header in subsequent API requests.
 
 ---
 
 ## 3. LEMF Record Data Flow
 
-Once authenticated, the user will request the table of LEMF records.
+All LEMF records are stored in the isolated `lemf-service` database (`lemf_db`).
 
-1. **Triggering the Fetch**: The `useEffect` hook in [App.tsx](./frontend/src/App.tsx#L80-L82) detects that `isLoggedIn` is true and executes `loadRows()`.
-2. **Frontend Dispatch**: `loadRows()` ([App.tsx](./frontend/src/App.tsx#L50-L68)) sends a GET request to `/api/lemf`, injecting the JWT Token into the `Authorization: Bearer <token>` header.
-3. **Backend Routing**: 
-   - [app.js](./backend-node/src/app.js#L4) links `/api/lemf` to [lemfRoutes.js](./backend-node/src/routes/lemfRoutes.js).
-   - The route `GET /` is routed to `lemfController.list` in [lemfRoutes.js](./backend-node/src/routes/lemfRoutes.js#L5).
-4. **Data Retrieval**:
-   - `lemfController.list` ([lemfController.js](./backend-node/src/controllers/lemfController.js#L3-L12)) logs the action and asks the Model for data via `LemfModel.findAll()`.
-   - `LemfModel.findAll()` ([lemfModel.js](./backend-node/src/models/lemfModel.js#L84-L88)) issues the raw SQL query `SELECT * FROM lemf_records ORDER BY id DESC`.
-   - It utilizes the MySQL connection pool initialized in [config/db.js](./backend-node/src/config/db.js#L35).
-5. **Formatting and Returning**: The Model maps the raw SQL rows to cleaner Data Transfer Objects via `mapRowToDto` ([lemfModel.js](./backend-node/src/models/lemfModel.js#L5-L16)). The controller wraps the array in JSON and sends it back to the client.
-6. **Frontend Render**: [App.tsx](./frontend/src/App.tsx#L64) updates the `rows` state variable, which causes [display_lemf.tsx](./frontend/src/Pages/display_lemf.tsx) to re-render, displaying the newly fetched rows in the table UI.
+### 3.1 Authenticated API Request
+1. **Trigger**: When the client navigates to the `/display` route, the application fires `loadRows()` in [App.tsx](./frontend/src/App.tsx#L50).
+2. **Token Injected**: `loadRows()` fetches from `/api/lemf`. It appends the cached JWT from `localStorage` as a `Bearer` token in the `Authorization` header.
+3. **Gateway Routing**: The NGINX proxy captures the request on port `8000` and forwards `/api/lemf` to the `lemf-service` container on port `8080`.
+
+### 3.2 Token Validation & DB Fetching
+1. **Middleware Check**: Before reaching the route handler, the request passes through the auth middleware ([lemf-service/src/middlewares/authMiddleware.js](./lemf-service/src/middlewares/authMiddleware.js#L4)).
+2. **Decryption & Authorize**: The middleware extracts the bearer token and executes `jwt.verify(token, JWT_SECRET)`. If the token is valid, it attaches the decoded user data to `req.user` and calls `next()`. If invalid or missing, it blocks the request with a `401 Unauthorized` status.
+3. **Controller Execution**: The authorized request is routed to `lemfController.list` in [lemfRoutes.js](./lemf-service/src/routes/lemfRoutes.js).
+4. **SQL Query**: The controller calls `LemfModel.findAll()`, which uses the MySQL pool connection to query the data:
+   ```sql
+   SELECT * FROM lemf_records ORDER BY id DESC;
+   ```
+5. **Data Hydration**: [lemfModel.js](./lemf-service/src/models/lemfModel.js#L5) maps the raw MySQL row columns to cleaner JavaScript camelCase DTOs via `mapRowToDto`.
+6. **Rendering**: The hydrated JSON payload is returned to the client. The frontend updates the `rows` state variable in [App.tsx](./frontend/src/App.tsx#L23), which triggers a visual re-render of [display_lemf.tsx](./frontend/src/Pages/display_lemf.tsx) displaying the record table.

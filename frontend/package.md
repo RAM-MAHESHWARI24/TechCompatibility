@@ -45,6 +45,10 @@ These packages make up the core of our user interface and run directly in the us
 *   **What it is:** A comprehensive library that provides popular icon sets (e.g., FontAwesome, Material Icons, Feather Icons, Ionicons) as React components.
 *   **Why it's used:** Makes adding lightweight SVG icons easy and modular. Instead of loading heavy icon font files, we can import specific icons directly as reusable React components.
 
+### 4. `react-router-dom` (`^7.18.1`)
+*   **What it is:** The standard routing library for React applications.
+*   **Why it's used:** Enables client-side navigation and URL-based view changes in our Single Page Application (SPA), replacing the previous legacy URL-hash based routing (`window.location.hash`). It provides `<BrowserRouter>`, `<Routes>`, `<Route>`, and `<Link>` components to match active URL paths with React view layouts.
+
 ---
 
 ## 🛠️ Development Dependencies (`devDependencies`)

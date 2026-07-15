@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lemf-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lemf-service
+  template:
+    metadata:
+      labels:
+        app: lemf-service
+    spec:
+      containers:
+      - name: lemf-service
+        image: lemf-service:latest
+        imagePullPolicy: Never
+        envFrom:
+        - configMapRef:
+            name: app-config
+        env:
+        - name: DB_NAME
+          value: "lemf_db"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lemf-service
+spec:
+  ports:
+  - port: 8080
+  selector:
+    app: lemf-service

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './App.css';
 import type { LemfRecord } from './types';
 import Home from './Pages/home';
@@ -7,8 +8,6 @@ import CreateLemf from './Pages/create_lemf';
 import Details from './Pages/details';
 import Login from './Pages/login';
 import EditLemf from './Pages/edit_lemf';
-
-type PageKey = 'home' | 'display' | 'create' | 'details' | 'edit';
 
 const emptyForm = {
   name: '',
@@ -19,7 +18,7 @@ const emptyForm = {
 };
 
 export default function App() {
-  const [activePage, setActivePage] = useState<PageKey>('home');
+  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState('');
   const [rows, setRows] = useState<LemfRecord[]>([]);
   const [form, setForm] = useState(emptyForm);
@@ -32,9 +31,8 @@ export default function App() {
   const [user, setUser] = useState<string>(() => localStorage.getItem('username') || '');
   const [editRecord, setEditRecord] = useState<LemfRecord | null>(null);
 
-  const navigateTo = (page: PageKey) => {
-    setActivePage(page);
-    window.history.pushState({}, '', `#${page}`);
+  const navigateTo = (page: string) => {
+    navigate(page === 'home' ? '/' : `/${page}`);
   };
 
   const handleSessionExpired = () => {
@@ -68,21 +66,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    const syncFromHash = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash === 'display' || hash === 'create' || hash === 'details' || hash === 'edit' || hash === 'home') {
-        setActivePage(hash as PageKey);
-      } else {
-        setActivePage('home');
-      }
-    };
-
     if (isLoggedIn) {
       loadRows();
     }
-    syncFromHash();
-    window.addEventListener('hashchange', syncFromHash);
-    return () => window.removeEventListener('hashchange', syncFromHash);
   }, [isLoggedIn]);
 
   const handleLogin = async (username: string, pass: string): Promise<boolean> => {
@@ -287,9 +273,9 @@ export default function App() {
           <h1>LEMF MANAGEMENT PORTAL</h1>
         </div>
         <div className="topbar-actions">
-          <a href="#display" className="text-link" onClick={(event) => { event.preventDefault(); navigateTo('display'); }}>
+          <Link to="/display" className="text-link">
             Display All
-          </a>
+          </Link>
           <button className="primary-btn" onClick={() => navigateTo('create')}>
             Create New
           </button>
@@ -305,46 +291,50 @@ export default function App() {
       </header>
 
       <main className="main-panel">
-        {activePage === 'home' && (
-          <Home
-            searchValue={searchValue}
-            setSearchValue={setSearchValue}
-            handleSearch={handleSearch}
-            message={message}
-          />
-        )}
+        <Routes>
+          <Route path="/" element={
+            <Home
+              searchValue={searchValue}
+              setSearchValue={setSearchValue}
+              handleSearch={handleSearch}
+              message={message}
+            />
+          } />
+          
+          <Route path="/display" element={
+            <DisplayLemf
+              rows={rows}
+              onEdit={(record) => {
+                setEditRecord(record);
+                navigateTo('edit');
+              }}
+              onDelete={handleDelete}
+            />
+          } />
 
-        {activePage === 'display' && (
-          <DisplayLemf
-            rows={rows}
-            onEdit={(record) => {
-              setEditRecord(record);
-              navigateTo('edit');
-            }}
-            onDelete={handleDelete}
-          />
-        )}
+          <Route path="/create" element={
+            <CreateLemf
+              form={form}
+              setForm={setForm}
+              handleSubmit={handleSubmit}
+              navigateTo={navigateTo}
+            />
+          } />
 
-        {activePage === 'create' && (
-          <CreateLemf
-            form={form}
-            setForm={setForm}
-            handleSubmit={handleSubmit}
-            navigateTo={navigateTo}
-          />
-        )}
+          <Route path="/details" element={
+            <Details selectedRecord={selectedRecord} />
+          } />
 
-        {activePage === 'details' && (
-          <Details selectedRecord={selectedRecord} />
-        )}
-
-        {activePage === 'edit' && editRecord && (
-          <EditLemf
-            record={editRecord}
-            handleUpdate={handleUpdate}
-            navigateTo={navigateTo}
-          />
-        )}
+          <Route path="/edit" element={
+            editRecord ? (
+              <EditLemf
+                record={editRecord}
+                handleUpdate={handleUpdate}
+                navigateTo={navigateTo}
+              />
+            ) : null
+          } />
+        </Routes>
       </main>
       {toast && (
         <div className={`toast-notification toast-${toast.type}`}>

@@ -1,6 +1,16 @@
 # Node
 frontend/node_modules/
 frontend/dist/
+auth-service/node_modules/
+lemf-service/node_modules/
+
+# Environments & Logs
+.env
+auth-service/.env
+lemf-service/.env
+*.log
+logs/
+
 
 # Spring Boot
 backend/target/
