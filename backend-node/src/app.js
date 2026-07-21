@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const checkRoutes = require('./routes/checkRoutes');
 const lemfRoutes = require('./routes/lemfRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -42,6 +43,15 @@ app.post('/api/logs', (req, res) => {
 app.use('/api/check', checkRoutes);
 app.use('/api/lemf', lemfRoutes);
 app.use('/api/auth', authRoutes);
+
+// Serve frontend static files
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
+
+// Catch-all route to serve the frontend index.html for client-side routing
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

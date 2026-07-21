@@ -1,6 +1,14 @@
 # Node
 frontend/node_modules/
 frontend/dist/
+backend-node/node_modules/
+*.log
+.env
+
+# Large archives and DB dumps
+*.tar.gz
+*.tar.xz
+*.sql
 
 # Spring Boot
 backend/target/
